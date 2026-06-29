@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOS-RESCATE</title>
+    <style>
+        body { background: #000; color: #fff; text-align: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        h1 { margin-bottom: 20px; color: #ff0000; }
+        button { width: 70vw; height: 70vw; max-width: 300px; max-height: 300px; border-radius: 50%; border: none; font-size: 1.5rem; font-weight: bold; background: #ff0000; color: white; box-shadow: 0 0 40px #ff0000; transition: all 0.3s; cursor: pointer; }
+        button.activo { background: #333; box-shadow: 0 0 10px #555; color: #aaa; }
+        #estado { margin-top: 30px; font-size: 1.2rem; padding: 10px; border: 1px solid #333; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>SISTEMA SOS</h1>
+    <button id="sosBtn">ACTIVAR SOS</button>
+    <div id="estado">Estado: Esperando</div>
+
+    <script>
+        const btn = document.getElementById('sosBtn');
+        const estado = document.getElementById('estado');
+        let audioCtx, esActivo = false, timeoutId;
+        const UNIT = 300;
+
+        btn.addEventListener('click', () => {
+            if (esActivo) {
+                clearTimeout(timeoutId);
+                esActivo = false;
+                btn.innerText = "ACTIVAR SOS";
+                btn.classList.remove('activo');
+                estado.innerText = "Estado: Inactivo";
+            } else {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                esActivo = true;
+                btn.innerText = "DETENER SOS";
+                btn.classList.add('activo');
+                ejecutarSecuencia();
+            }
+        });
+
+        async function emitirTono(duracion) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            await new Promise(r => setTimeout(r, duracion));
+            osc.stop();
+            osc.disconnect();
+            await new Promise(r => setTimeout(r, UNIT));
+        }
+
+        async function ejecutarSecuencia() {
+            if (!esActivo) return;
+            estado.innerText = "EMITIENDO SOS...";
+            for(let i=0; i<3; i++) await emitirTono(UNIT);
+            await new Promise(r => setTimeout(r, UNIT*2));
+            for(let i=0; i<3; i++) await emitirTono(UNIT*3);
+            await new Promise(r => setTimeout(r, UNIT*2));
+            for(let i=0; i<3; i++) await emitirTono(UNIT);
+            estado.innerText = "SILENCIO (5s)...";
+            if (esActivo) timeoutId = setTimeout(ejecutarSecuencia, 5000);
+        }
+    </script>
+</body>
+</html>
